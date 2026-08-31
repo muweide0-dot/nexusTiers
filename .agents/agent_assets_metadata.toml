@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "X0uT8XBCJMz40TSw82ClV"
+uri = "file://NexusTiers-source.zip"
+type = "unspecified"
+title = "NexusTiers vollständiger Quellcode"
+description = "ZIP mit Dashboard, API, Discord-Bot, Queue-/Ticket-System, Datenmodell, Setup-Anleitung und Fabric-1.21.11-Mod."
+logical_id = "35390219-12aa-4f71-8f9a-804c21720fc3"
+content_hash = "sha256:711fc602c34bf3dc804512cb4d94ca209b17c472a0fe6f9414c77ee7bd09fc38"
+size = 23265364
+mtime_ms = 1788191376002
+storage_uri = "gcs://replit-rams-assets-kira/rams/assets/repl:6c87a2f3-6b84-42e1-9aaa-ff2831a6335f/35390219-12aa-4f71-8f9a-804c21720fc3/9610e999-225a-45fd-a202-0a25155c664c"
+storage_version_token = "1788191385154759"
+content_type = "application/octet-stream"

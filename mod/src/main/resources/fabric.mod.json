@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "nexustiers",
+  "version": "${version}",
+  "name": "NexusTiers",
+  "description": "Minecraft tier badges and player lookup for NexusTiers testing queues.",
+  "authors": ["NexusTiers"],
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.nexustiers.client.NexusTiersClient"]
+  },
+  "mixins": ["nexustiers.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

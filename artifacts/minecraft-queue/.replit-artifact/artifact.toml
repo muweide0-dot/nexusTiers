@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Minecraft Queue Control"
+description = "A Discord queue control center for Minecraft PvP testers, with kit waitlists, verified tester workflows, tier results, Discord roles and channels, and a Fabric companion mod view."
+version = "1.0.0"
+id = "artifacts/minecraft-queue"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24751
+
+[services.development]
+run = "pnpm --filter @workspace/minecraft-queue run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/minecraft-queue", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/minecraft-queue/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24751"
+BASE_PATH = "/"

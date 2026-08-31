@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "package": "com.nexustiers.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["PlayerEntityRendererMixin"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

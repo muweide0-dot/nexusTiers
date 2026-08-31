@@ -1,0 +1,457 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: queues
+    description: Kit waitlists and ticket flow
+  - name: testers
+    description: Verification and waitlist entry
+  - name: results
+    description: Tier results and player history
+  - name: setup
+    description: Discord server setup
+  - name: activity
+    description: Recent queue activity
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /queues:
+    get:
+      operationId: listQueues
+      tags: [queues]
+      summary: List all kit queues
+      responses:
+        "200":
+          description: Queue overview
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueueOverview"
+  /queues/{kit}:
+    get:
+      operationId: getQueue
+      tags: [queues]
+      summary: Get one kit queue
+      parameters:
+        - $ref: "#/components/parameters/KitParam"
+      responses:
+        "200":
+          description: Queue detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueDetail"
+        "404":
+          description: Queue not found
+    post:
+      operationId: joinQueue
+      tags: [queues]
+      summary: Join a kit queue
+      parameters:
+        - $ref: "#/components/parameters/KitParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaitlistInput"
+      responses:
+        "201":
+          description: Queue entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntry"
+        "409":
+          description: Queue is full or user is already queued
+  /queues/{kit}/open:
+    post:
+      operationId: openQueue
+      tags: [queues]
+      summary: Open a kit queue
+      parameters:
+        - $ref: "#/components/parameters/KitParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueActionInput"
+      responses:
+        "200":
+          description: Queue opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueActionResponse"
+  /queues/{kit}/close:
+    post:
+      operationId: closeQueue
+      tags: [queues]
+      summary: Close a kit queue
+      parameters:
+        - $ref: "#/components/parameters/KitParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueActionInput"
+      responses:
+        "200":
+          description: Queue closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueActionResponse"
+  /queues/{kit}/next:
+    post:
+      operationId: nextTicket
+      tags: [queues]
+      summary: Create the next tester ticket
+      parameters:
+        - $ref: "#/components/parameters/KitParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueActionInput"
+      responses:
+        "200":
+          description: Ticket opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+        "409":
+          description: No queued player
+  /queues/{kit}/skip:
+    post:
+      operationId: skipTicket
+      tags: [queues]
+      summary: Skip and close the current ticket
+      parameters:
+        - $ref: "#/components/parameters/KitParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueActionInput"
+      responses:
+        "200":
+          description: Ticket skipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueDetail"
+  /verification:
+    post:
+      operationId: verifyAccount
+      tags: [testers]
+      summary: Verify a Minecraft account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerificationInput"
+      responses:
+        "201":
+          description: Verified account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifiedAccount"
+  /waitlist:
+    post:
+      operationId: applyWaitlist
+      tags: [testers]
+      summary: Add a verified player to a kit waitlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaitlistInput"
+      responses:
+        "201":
+          description: Waitlist entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntry"
+        "409":
+          description: Queue is full or user is already queued
+  /results:
+    post:
+      operationId: submitResult
+      tags: [results]
+      summary: Submit a tier result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResultInput"
+      responses:
+        "201":
+          description: Recorded result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierResult"
+  /players/{ign}/tiers:
+    get:
+      operationId: getPlayerTiers
+      tags: [results]
+      summary: Get every tier for a Minecraft player
+      parameters:
+        - name: ign
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Player tier profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+  /setup:
+    post:
+      operationId: setupServer
+      tags: [setup]
+      summary: Create NexusTiers Discord channels and roles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupInput"
+      responses:
+        "200":
+          description: Setup summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupResult"
+  /activity:
+    get:
+      operationId: listActivity
+      tags: [activity]
+      summary: List recent queue activity
+      responses:
+        "200":
+          description: Recent events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+components:
+  parameters:
+    KitParam:
+      name: kit
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [uhc, sword, mace, diapot, nethpot, smp, crystal, axe]
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    QueueOverview:
+      type: object
+      required: [kit, label, status, count, max, activeTesters, channelName, lastUpdate]
+      properties:
+        kit: { type: string }
+        label: { type: string }
+        status: { type: string, enum: [open, closed] }
+        count: { type: number }
+        max: { type: number }
+        activeTesters: { type: number }
+        channelName: { type: string }
+        lastUpdate: { type: string, format: date-time }
+    QueueEntry:
+      type: object
+      required: [id, position, discordUserId, username, ign, currentTier, region, server, joinedAt]
+      properties:
+        id: { type: string }
+        position: { type: number }
+        discordUserId: { type: string }
+        username: { type: string }
+        ign: { type: string }
+        currentTier: { type: string }
+        region: { type: string }
+        server: { type: string }
+        joinedAt: { type: string, format: date-time }
+    Ticket:
+      type: object
+      required: [id, kit, player, tester, status, openedAt]
+      properties:
+        id: { type: string }
+        kit: { type: string }
+        player: { $ref: "#/components/schemas/QueueEntry" }
+        tester: { $ref: "#/components/schemas/Tester" }
+        status: { type: string, enum: [open, skipped, completed] }
+        openedAt: { type: string, format: date-time }
+    Tester:
+      type: object
+      required: [discordUserId, username, region, active]
+      properties:
+        discordUserId: { type: string }
+        username: { type: string }
+        region: { type: string }
+        active: { type: boolean }
+    QueueDetail:
+      type: object
+      required: [kit, label, status, count, max, entries, activeTesters, currentTicket, lastUpdate]
+      properties:
+        kit: { type: string }
+        label: { type: string }
+        status: { type: string, enum: [open, closed] }
+        count: { type: number }
+        max: { type: number }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/QueueEntry" }
+        activeTesters:
+          type: array
+          items: { $ref: "#/components/schemas/Tester" }
+        currentTicket:
+          anyOf:
+            - $ref: "#/components/schemas/Ticket"
+            - type: "null"
+        lastUpdate: { type: string, format: date-time }
+    QueueActionInput:
+      type: object
+      required: [actorId, actorName]
+      properties:
+        actorId: { type: string }
+        actorName: { type: string }
+    WaitlistInput:
+      type: object
+      required: [discordUserId, username, ign, currentTier, region, server]
+      properties:
+        discordUserId: { type: string }
+        username: { type: string }
+        ign: { type: string }
+        currentTier: { type: string }
+        region: { type: string }
+        server: { type: string }
+        kit: { type: string }
+    QueueActionResponse:
+      type: object
+      required: [message, queue]
+      properties:
+        message: { type: string }
+        queue: { $ref: "#/components/schemas/QueueDetail" }
+    VerificationInput:
+      type: object
+      required: [discordUserId, username, ign]
+      properties:
+        discordUserId: { type: string }
+        username: { type: string }
+        ign: { type: string }
+    VerifiedAccount:
+      type: object
+      required: [discordUserId, username, ign, verifiedAt]
+      properties:
+        discordUserId: { type: string }
+        username: { type: string }
+        ign: { type: string }
+        verifiedAt: { type: string, format: date-time }
+    ResultInput:
+      type: object
+      required: [playerDiscordUserId, playerUsername, ign, kit, tier, testerId, testerName, previousTier]
+      properties:
+        playerDiscordUserId: { type: string }
+        playerUsername: { type: string }
+        ign: { type: string }
+        kit: { type: string }
+        tier: { type: string, enum: [N/A, lt5, ht5, lt4, ht4, lt3, ht3, lt2, ht2, lt1, ht1] }
+        testerId: { type: string }
+        testerName: { type: string }
+        previousTier: { type: string }
+        region: { type: string }
+    TierResult:
+      type: object
+      required: [id, playerUsername, ign, kit, tier, previousTier, testerName, createdAt]
+      properties:
+        id: { type: string }
+        playerUsername: { type: string }
+        ign: { type: string }
+        kit: { type: string }
+        tier: { type: string }
+        previousTier: { type: string }
+        testerName: { type: string }
+        createdAt: { type: string, format: date-time }
+        discordMessage: { type: string }
+    PlayerProfile:
+      type: object
+      required: [ign, username, bestTier, tiers]
+      properties:
+        ign: { type: string }
+        username: { type: string }
+        bestTier: { type: string }
+        tiers:
+          type: array
+          items: { $ref: "#/components/schemas/TierResult" }
+    SetupInput:
+      type: object
+      required: [guildId, actorId]
+      properties:
+        guildId: { type: string }
+        actorId: { type: string }
+    SetupResult:
+      type: object
+      required: [guildId, createdChannels, createdRoles, message]
+      properties:
+        guildId: { type: string }
+        createdChannels:
+          type: array
+          items: { type: string }
+        createdRoles:
+          type: array
+          items: { type: string }
+        message: { type: string }
+    ActivityItem:
+      type: object
+      required: [id, title, description, timestamp, kind]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        timestamp: { type: string, format: date-time }
+        kind: { type: string, enum: [queue, ticket, result, setup, verification] }
+

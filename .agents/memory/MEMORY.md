@@ -1,0 +1,1 @@
+- [Discord integration boundary](discord-integration.md) — user OAuth is identity-level; server management and gateway automation need a separate bot token.
