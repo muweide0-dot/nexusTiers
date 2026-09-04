@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   ArrowRight,
@@ -11,11 +11,13 @@ import {
   CircleDot,
   Command,
   Copy,
+  Crown,
   ExternalLink,
   Hash,
   LayoutDashboard,
   Loader2,
   Menu,
+  Medal,
   MonitorDot,
   Pause,
   Play,
@@ -27,6 +29,8 @@ import {
   SkipForward,
   Sparkles,
   Ticket as TicketIcon,
+  Trophy,
+  TrendingUp,
   Users,
   X,
   XCircle,
@@ -76,6 +80,44 @@ const kits: { key: Kit; label: string; short: string; hue: string }[] = [
   { key: 'axe', label: 'Axe', short: 'AX', hue: 'hsl(37 88% 61%)' },
 ];
 const actor = { actorId: 'control-room', actorName: 'Nexus Control' };
+type LeaderboardRow = {
+  rank: number;
+  username: string;
+  ign: string;
+  points: number;
+  results: number;
+  bestTier: string;
+  lastResult: string;
+};
+
+const pointRules = [
+  { tier: 1, high: 60, low: 45 },
+  { tier: 2, high: 30, low: 20 },
+  { tier: 3, high: 10, low: 6 },
+  { tier: 4, high: 4, low: 3 },
+  { tier: 5, high: 2, low: 1 },
+  { tier: 6, high: null, low: null },
+  { tier: 7, high: null, low: null },
+] as const;
+
+function tierNumber(value?: string) {
+  const match = value?.match(/([1-7])/);
+  return match ? Number(match[1]) : null;
+}
+
+function useLeaderboard() {
+  return useQuery<LeaderboardRow[]>({
+    queryKey: ['leaderboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/leaderboard');
+      if (!response.ok) throw new Error('Leaderboard konnte nicht geladen werden.');
+      return response.json() as Promise<LeaderboardRow[]>;
+    },
+    staleTime: 15000,
+  });
+}
+
+
 
 function kitMeta(key?: string) {
   return kits.find((kit) => kit.key === key) ?? kits[0];
@@ -146,6 +188,7 @@ function Shell({ children }: { children: ReactNode }) {
   const nav = [
     { href: '/', label: 'Overview', icon: LayoutDashboard },
     { href: '/players', label: 'Players', icon: Search },
+    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/setup', label: 'Server setup', icon: Settings2 },
   ];
   return <div className="app-shell min-h-[100dvh] text-foreground">
@@ -169,7 +212,7 @@ function Overview() {
   const playerCount = queueRows.reduce((sum, queue) => sum + queue.count, 0);
   const testerCount = queueRows.reduce((sum, queue) => sum + queue.activeTesters, 0);
   return <div className="animate-rise">
-    <div className="grid-texture relative mb-8 overflow-hidden rounded-xl border border-border px-5 py-6 md:px-8 md:py-8"><div className="relative z-[1] max-w-2xl"><div className="mb-4 flex items-center gap-2"><Badge tone="green"><span className="h-1.5 w-1.5 rounded-full bg-primary" />live system</Badge><span className="font-mono text-[10px] text-muted-foreground">UTC {new Date().toISOString().slice(11, 16)}</span></div><h1 className="max-w-xl text-3xl font-semibold tracking-[-0.04em] md:text-5xl">Keep every duel<br /><span className="text-primary">moving forward.</span></h1><p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground md:text-base">The verified command bridge for Minecraft PvP testing. Queue state, ticket handoffs, and tier results in one focused view.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/queues/uhc" className="focus-ring inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110" data-testid="link-open-uhc-queue">Open UHC lane <ArrowRight className="h-4 w-4" /></Link><Link href="/setup" className="focus-ring inline-flex items-center gap-2 rounded-md border border-border bg-card/80 px-4 py-2.5 text-sm font-medium transition hover:bg-secondary" data-testid="link-server-setup">Configure relay</Link></div></div><div className="absolute -right-16 -top-20 hidden h-80 w-80 rounded-full border border-primary/20 md:block"><div className="absolute inset-8 rounded-full border border-primary/10"><div className="absolute right-12 top-10 h-2 w-2 rounded-full bg-primary shadow-[0_0_20px_hsl(155_72%_48%_/_0.6)]" /></div></div></div>
+    <div className="grid-texture relative mb-8 overflow-hidden rounded-xl border border-border px-5 py-6 md:px-8 md:py-8"><div className="relative z-[1] max-w-2xl"><div className="mb-4 flex items-center gap-2"><Badge tone="green"><span className="h-1.5 w-1.5 rounded-full bg-primary" />live system</Badge><span className="font-mono text-[10px] text-muted-foreground">UTC {new Date().toISOString().slice(11, 16)}</span></div><h1 className="max-w-xl text-3xl font-semibold tracking-[-0.04em] md:text-5xl">Keep every duel<br /><span className="text-primary">moving forward.</span></h1><p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground md:text-base">The verified command bridge for Minecraft PvP testing. Queue state, ticket handoffs, and tier results in one focused view.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/queues/uhc" className="focus-ring inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110" data-testid="link-open-uhc-queue">Open UHC lane <ArrowRight className="h-4 w-4" /></Link><Link href="/setup" className="focus-ring inline-flex items-center gap-2 rounded-md border border-border bg-card/80 px-4 py-2.5 text-sm font-medium transition hover:bg-secondary" data-testid="link-server-setup">Configure relay</Link><Link href="/leaderboard" className="focus-ring inline-flex items-center gap-2 rounded-md border border-accent/25 bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/15" data-testid="link-leaderboard"><Trophy className="h-4 w-4" />View leaderboard</Link></div></div><div className="absolute -right-16 -top-20 hidden h-80 w-80 rounded-full border border-primary/20 md:block"><div className="absolute inset-8 rounded-full border border-primary/10"><div className="absolute right-12 top-10 h-2 w-2 rounded-full bg-primary shadow-[0_0_20px_hsl(155_72%_48%_/_0.6)]" /></div></div></div>
     <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Open lanes" value={openCount} suffix="/ 8" icon={Activity} tone="green" /><Metric label="Players waiting" value={playerCount} icon={Users} tone="amber" /><Metric label="Testers active" value={testerCount} icon={ShieldCheck} tone="blue" /><Metric label="Relay health" value="14" suffix="ms" icon={MonitorDot} tone="green" /></div>
     <div className="grid gap-8 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,.85fr)]"><section><SectionTitle eyebrow="01 / queue matrix" title="All kit lanes" action={<span className="font-mono text-[10px] text-muted-foreground">auto-refresh enabled</span>} />{queues.isLoading ? <LoadingState /> : queues.isError ? <ErrorState onRetry={() => queues.refetch()} /> : queueRows.length === 0 ? <EmptyState icon={Pause} title="No queue lanes found" description="Once the relay is connected, kit lanes will appear here." /> : <div className="grid gap-3 sm:grid-cols-2">{queueRows.map((queue, index) => <QueueCard key={queue.kit} queue={queue} index={index} />)}</div>}</section><section><SectionTitle eyebrow="02 / event stream" title="Recent activity" action={<Activity className="h-4 w-4 text-muted-foreground" />} />{activity.isLoading ? <LoadingState label="Reading activity" /> : activity.isError ? <ErrorState onRetry={() => activity.refetch()} /> : activityRows.length === 0 ? <EmptyState icon={Activity} title="No events yet" description="Queue and ticket handoffs will be recorded here." /> : <ActivityFeed items={activityRows.slice(0, 8)} />}</section></div>
     <div className="mt-8 grid gap-3 md:grid-cols-[1fr_auto]"><div className="rounded-xl border border-border bg-card/70 p-4"><div className="flex items-center gap-3"><Server className="h-4 w-4 text-primary" /><div><p className="text-sm font-medium">Minecraft network bridge</p><p className="mt-0.5 text-xs text-muted-foreground">mc.nexustiers.gg · Paper 1.21.4 · last heartbeat 14 seconds ago</p></div><Badge tone="green" >healthy</Badge></div></div><Link href="/players" className="focus-ring flex items-center justify-center gap-2 rounded-xl border border-border bg-card/70 px-5 py-4 text-sm font-medium hover:bg-secondary" data-testid="link-player-directory">Player directory <ArrowRight className="h-4 w-4 text-primary" /></Link></div>
@@ -190,6 +233,20 @@ function QueueCard({ queue, index }: { queue: QueueOverview; index: number }) {
 function ActivityFeed({ items }: { items: ActivityItem[] }) {
   const kindIcon = { queue: Activity, ticket: TicketIcon, result: CheckCircle2, setup: Settings2, verification: ShieldCheck };
   return <div className="divide-y divide-border rounded-xl border border-border bg-card/60">{items.map((item) => { const Icon = kindIcon[item.kind] ?? Activity; return <div key={item.id} className="flex gap-3 p-4"><span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md bg-secondary text-muted-foreground"><Icon className="h-3.5 w-3.5" /></span><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><p className="text-sm font-medium">{item.title}</p><span className="shrink-0 font-mono text-[10px] text-muted-foreground">{timeAgo(item.timestamp)}</span></div><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.description}</p></div></div>; })}</div>;
+}
+
+function PodiumCard({ row }: { row: LeaderboardRow }) {
+  const RankIcon = row.rank === 1 ? Crown : row.rank === 2 ? Medal : Trophy;
+  return <div className={'podium-card podium-card-' + row.rank + ' rounded-xl border p-4'}><div className="flex items-start justify-between"><span className="grid h-9 w-9 place-items-center rounded-lg bg-background/50 text-accent"><RankIcon className="h-4 w-4" /></span><span className="font-mono text-xs text-muted-foreground">#{String(row.rank).padStart(2, '0')}</span></div><p className="mt-5 truncate text-base font-semibold">{row.ign}</p><p className="mt-1 text-xs text-muted-foreground">{row.username} · Tier {tierNumber(row.bestTier) ?? '—'}</p><div className="mt-4 flex items-end justify-between"><span className="stat-number text-3xl font-semibold text-accent">{row.points}</span><span className="font-mono text-[10px] uppercase text-muted-foreground">points</span></div></div>;
+}
+
+function LeaderboardPage() {
+  const leaderboard = useLeaderboard();
+  const rows = (leaderboard.data ?? []).slice(0, 7);
+  return <div className="animate-rise">
+    <div className="leaderboard-hero mb-8 overflow-hidden rounded-2xl border border-border p-6 md:p-9"><div className="relative z-[1] flex flex-wrap items-end justify-between gap-6"><div><div className="mb-4 flex items-center gap-2"><Badge tone="amber"><Trophy className="h-3 w-3" />season standings</Badge><span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">live ranking</span></div><h1 className="max-w-2xl text-4xl font-semibold tracking-[-0.06em] md:text-6xl">Earn your place<br /><span className="text-accent">above the line.</span></h1><p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">Every verified result adds points. Climb the board, defend your tier, and make the next test count.</p></div><div className="leaderboard-hero-stat"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Scoring model</p><p className="mt-2 text-3xl font-semibold text-foreground">HT / LT</p><p className="mt-1 text-xs text-muted-foreground">higher tier, higher reward</p></div></div></div>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"><section className="leaderboard-surface rounded-2xl border border-border bg-card/65 p-4 md:p-6"><div className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">01 / top players</p><h2 className="text-xl font-semibold tracking-tight">Leaderboard</h2></div><span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 font-mono text-[10px] text-primary">TOP 07</span></div>{leaderboard.isLoading ? <LoadingState label="Loading standings" /> : leaderboard.isError ? <ErrorState onRetry={() => leaderboard.refetch()} message="The leaderboard is temporarily unavailable." /> : rows.length === 0 ? <EmptyState icon={Trophy} title="No ranked players yet" description="Submit a verified result to create the first leaderboard entry." /> : <><div className="mb-6 grid gap-3 md:grid-cols-3">{rows.slice(0, 3).map((row) => <PodiumCard key={row.ign} row={row} />)}</div><div className="leaderboard-table overflow-hidden rounded-xl border border-border"><div className="leaderboard-row leaderboard-row-head"><span>Rank</span><span>Player</span><span>Tier</span><span>Tests</span><span className="text-right">Points</span></div>{rows.map((row) => <div className="leaderboard-row" key={row.ign}><span className={'rank-number rank-' + row.rank}>{String(row.rank).padStart(2, '0')}</span><div className="min-w-0"><p className="truncate text-sm font-medium">{row.ign}</p><p className="truncate text-[11px] text-muted-foreground">{row.username}</p></div><span className="tier-pill">Tier {tierNumber(row.bestTier) ?? '—'}</span><span className="text-xs text-muted-foreground">{row.results} result{row.results === 1 ? '' : 's'}</span><span className="text-right font-mono text-sm font-semibold text-accent">{row.points} pts</span></div>)}</div></>}</section><aside className="space-y-5"><section className="points-card rounded-2xl border border-border bg-card/70 p-5 md:p-6"><div className="mb-5 flex items-start justify-between"><div><p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-accent">02 / point system</p><h2 className="text-xl font-semibold">Trophy tiers</h2></div><TrendingUp className="h-5 w-5 text-accent" /></div><div className="space-y-2">{pointRules.map((rule) => <div className="point-rule" key={rule.tier}><div className="flex items-center gap-3"><span className="point-trophy"><Trophy className="h-3.5 w-3.5" /></span><span className="text-sm font-medium">Trophy Tier {rule.tier}</span></div><div className="flex items-center gap-3 font-mono text-[10px]"><span className="text-foreground">{rule.high === null ? '—' : String(rule.high) + ' pts'}</span><span className="text-muted-foreground">{rule.low === null ? '—' : String(rule.low) + ' pts'}</span></div></div>)}</div><p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">HT earns the first value. LT earns the second value. Tier 6 and 7 are ready for your future scoring rules.</p></section><section className="rounded-2xl border border-primary/15 bg-primary/5 p-5"><div className="flex items-center gap-2 text-primary"><ShieldCheck className="h-4 w-4" /><p className="text-sm font-medium">Earn points through testing</p></div><p className="mt-3 text-xs leading-relaxed text-muted-foreground">Complete a verified kit test and your best result is reflected here automatically.</p><Link href="/players" className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-primary hover:underline">Find a player <ArrowRight className="h-3.5 w-3.5" /></Link></section></aside></div>
+  </div>;
 }
 
 function QueuePage() {
@@ -277,7 +334,7 @@ function SetupPage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={Overview} /><Route path="/queues/:kit" component={QueuePage} /><Route path="/players" component={PlayersPage} /><Route path="/setup" component={SetupPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={Overview} /><Route path="/leaderboard" component={LeaderboardPage} /><Route path="/queues/:kit" component={QueuePage} /><Route path="/players" component={PlayersPage} /><Route path="/setup" component={SetupPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
 }
 
 function App() {
