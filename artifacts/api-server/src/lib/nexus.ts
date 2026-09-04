@@ -462,7 +462,7 @@ export async function setupServer(input: unknown) {
   const [channels, roles] = await Promise.all([
     discordRequest(`/guilds/${data.guildId}/channels`),
     discordRequest(`/guilds/${data.guildId}/roles`),
-  ]) as [Array<{ name: string; id: string }>, Array<{ name: string; id: string }>];
+  ]) as [Array<{ name: string; id: string }>, Array<{ name: string; id: string; hoist?: boolean; managed?: boolean }>];
   const createdChannels: string[] = [];
   for (const name of channelNames) {
     if (channels.some((channel) => channel.name === name)) continue;
@@ -472,15 +472,29 @@ export async function setupServer(input: unknown) {
     });
     createdChannels.push(name);
   }
-  const desiredRoles = ["NexusTiers", "Verified Tester", ...KITS.map((kit) => `${kit} Queue`), ...tierRoleNames];
+  const desiredRoles = [
+    { name: "NexusTiers", hoist: true },
+    { name: "Verified Tester", hoist: true },
+    ...KITS.map((kit) => ({ name: `${KIT_LABELS[kit]} Queue`, hoist: false })),
+    ...tierRoleNames.map((name) => ({ name, hoist: true })),
+  ];
   const createdRoles: string[] = [];
-  for (const name of desiredRoles) {
-    if (roles.some((role) => role.name.toLowerCase() === name.toLowerCase())) continue;
+  for (const desired of desiredRoles) {
+    const existingRole = roles.find((role) => role.name.toLowerCase() === desired.name.toLowerCase());
+    if (existingRole) {
+      if (!existingRole.managed && (existingRole.name !== desired.name || existingRole.hoist !== desired.hoist)) {
+        await discordRequest(`/guilds/${data.guildId}/roles/${existingRole.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ name: desired.name, hoist: desired.hoist }),
+        });
+      }
+      continue;
+    }
     await discordRequest(`/guilds/${data.guildId}/roles`, {
       method: "POST",
-      body: JSON.stringify({ name, mentionable: false }),
+      body: JSON.stringify({ name: desired.name, hoist: desired.hoist, mentionable: false }),
     });
-    createdRoles.push(name);
+    createdRoles.push(desired.name);
   }
   const state = await getState();
   addActivity(state, "Discord server setup complete", `${createdChannels.length} channels and ${createdRoles.length} roles created.`, "setup");
