@@ -187,11 +187,6 @@ async function handleInteraction(interaction: DiscordInteraction) {
   const user = actor(interaction);
   try {
     if (name === "delete") {
-      const subcommand = interaction.data?.options?.find((item) => item.type === 1)?.name;
-      if (subcommand !== "role" && subcommand !== "all") {
-        await respond(interaction, "Nutze /delete role oder /delete all.", true);
-        return;
-      }
       if (!interaction.guild_id) {
         await respond(interaction, "Dieser Befehl funktioniert nur auf einem Server.", true);
         return;
@@ -203,11 +198,11 @@ async function handleInteraction(interaction: DiscordInteraction) {
         await respond(interaction, "Nur der Server-Eigentümer darf Rollen löschen.", true);
         return;
       }
-      const result = await deleteAllRoles(interaction.guild_id);
-      const skippedMessage = result.skipped.length > 0
-        ? ` ${result.skipped.length} Rollen konnten wegen Discord-Rechten oder der Rollen-Hierarchie nicht gelöscht werden.`
+      const roleResult = await deleteAllRoles(interaction.guild_id);
+      const skippedMessage = roleResult.skipped.length > 0
+        ? ` ${roleResult.skipped.length} Rollen konnten wegen Discord-Rechten oder der Rollen-Hierarchie nicht gelöscht werden.`
         : "";
-      await respond(interaction, `Rollen-Löschung abgeschlossen: ${result.deleted.length} Rollen gelöscht.${skippedMessage}`);
+      await respond(interaction, `Rollen-Löschung abgeschlossen: ${roleResult.deleted.length} Rollen gelöscht.${skippedMessage}`);
       return;
     }
     if (["open", "close", "next", "skip", "result", "createchannel"].includes(name ?? "") && !hasTesterPermission(interaction)) {
