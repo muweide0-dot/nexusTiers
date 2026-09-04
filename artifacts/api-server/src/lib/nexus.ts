@@ -291,6 +291,42 @@ function addActivity(
   state.activity = state.activity.slice(0, 30);
 }
 
+const TIER_POINTS: Record<string, number> = {
+  ht1: 60,
+  lt1: 45,
+  ht2: 30,
+  lt2: 20,
+  ht3: 10,
+  lt3: 6,
+  ht4: 4,
+  lt4: 3,
+  ht5: 2,
+  lt5: 1,
+};
+
+function tierRank(tier: string) {
+  const match = tier.toLowerCase().match(/^(?:lt|ht)([1-7])$/);
+  if (!match) return 999;
+  return Number(match[1]) * 2 + (tier.toLowerCase().startsWith("lt") ? 1 : 0);
+}
+
+export async function getLeaderboard() {
+  const state = await getState();
+  const players = new Map<string, { username: string; ign: string; points: number; results: number; bestTier: string; lastResult: string }>();
+  for (const result of state.results) {
+    const key = result.playerDiscordUserId ?? result.ign.toLowerCase();
+    const current = players.get(key) ?? { username: result.playerUsername, ign: result.ign, points: 0, results: 0, bestTier: "N/A", lastResult: result.createdAt };
+    current.points += TIER_POINTS[result.tier.toLowerCase()] ?? 0;
+    current.results += 1;
+    if (tierRank(result.tier) < tierRank(current.bestTier)) current.bestTier = result.tier;
+    if (new Date(result.createdAt).getTime() > new Date(current.lastResult).getTime()) current.lastResult = result.createdAt;
+    players.set(key, current);
+  }
+  return Array.from(players.values())
+    .sort((a, b) => b.points - a.points || b.results - a.results || a.ign.localeCompare(b.ign))
+    .map((player, index) => ({ ...player, rank: index + 1 }));
+}
+
 export async function openQueue(_input: unknown, kitValue: string) {
   const kit = OpenQueueParams.parse({ kit: kitValue }).kit as Kit;
   const queue = (await getState()).queues[kit];
