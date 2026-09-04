@@ -312,12 +312,13 @@ function tierRank(tier: string) {
 
 export async function getLeaderboard() {
   const state = await getState();
-  const players = new Map<string, { username: string; ign: string; points: number; results: number; bestTier: string; lastResult: string }>();
+  const players = new Map<string, { username: string; ign: string; points: number; results: number; bestTier: string; lastResult: string; kits: string[] }>();
   for (const result of state.results) {
     const key = result.playerDiscordUserId ?? result.ign.toLowerCase();
-    const current = players.get(key) ?? { username: result.playerUsername, ign: result.ign, points: 0, results: 0, bestTier: "N/A", lastResult: result.createdAt };
+    const current = players.get(key) ?? { username: result.playerUsername, ign: result.ign, points: 0, results: 0, bestTier: "N/A", lastResult: result.createdAt, kits: [] };
     current.points += TIER_POINTS[result.tier.toLowerCase()] ?? 0;
     current.results += 1;
+    if (!current.kits.includes(result.kit)) current.kits.push(result.kit);
     if (tierRank(result.tier) < tierRank(current.bestTier)) current.bestTier = result.tier;
     if (new Date(result.createdAt).getTime() > new Date(current.lastResult).getTime()) current.lastResult = result.createdAt;
     players.set(key, current);
