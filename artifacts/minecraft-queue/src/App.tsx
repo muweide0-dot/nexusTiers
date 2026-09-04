@@ -96,8 +96,20 @@ const pointRules = [
   { tier: 3, high: 10, low: 6 },
   { tier: 4, high: 4, low: 3 },
   { tier: 5, high: 2, low: 1 },
-  { tier: 6, high: null, low: null },
-  { tier: 7, high: null, low: null },
+] as const;
+
+const resultTierOptions = [
+  { value: 'N/A', label: 'Unranked — 0 points' },
+  { value: 'ht1', label: 'Tier 1 · HT — 60 points' },
+  { value: 'lt1', label: 'Tier 1 · LT — 45 points' },
+  { value: 'ht2', label: 'Tier 2 · HT — 30 points' },
+  { value: 'lt2', label: 'Tier 2 · LT — 20 points' },
+  { value: 'ht3', label: 'Tier 3 · HT — 10 points' },
+  { value: 'lt3', label: 'Tier 3 · LT — 6 points' },
+  { value: 'ht4', label: 'Tier 4 · HT — 4 points' },
+  { value: 'lt4', label: 'Tier 4 · LT — 3 points' },
+  { value: 'ht5', label: 'Tier 5 · HT — 2 points' },
+  { value: 'lt5', label: 'Tier 5 · LT — 1 point' },
 ] as const;
 
 function tierNumber(value?: string) {
@@ -282,7 +294,7 @@ function ResultForm({ ticket, kit }: { ticket: ApiTicket; kit: Kit }) {
   const [error, setError] = useState('');
   const submit = useSubmitResult();
   if (!open) return <button className="hidden" onClick={() => setOpen(true)} data-testid={`button-submit-result-${ticket.id}`}>open</button>;
-  return <div className="mt-4 border-t border-border pt-4"><div className="mb-3 flex items-center justify-between"><p className="text-xs font-medium">Record tier result</p><button className="text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)} data-testid="button-close-result"><X className="h-4 w-4" /></button></div><select value={tier} onChange={(event) => setTier(event.target.value as ResultInputTier)} className="focus-ring w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm" data-testid="select-result-tier">{['N/A', 'lt5', 'ht5', 'lt4', 'ht4', 'lt3', 'ht3', 'lt2', 'ht2', 'lt1', 'ht1'].map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select>{error && <p className="mt-2 text-xs text-destructive-foreground">{error}</p>}<Button variant="primary" className="mt-3 w-full" disabled={submit.isPending} onClick={() => submit.mutate({ data: { playerDiscordUserId: ticket.player.discordUserId, playerUsername: ticket.player.username, ign: ticket.player.ign, kit, tier, testerId: ticket.tester.discordUserId, testerName: ticket.tester.username, previousTier: ticket.player.currentTier, region: ticket.player.region } }, { onSuccess: () => setError('Result submitted to Discord'), onError: () => setError('Could not submit this result') })} data-testid="button-confirm-result">{submit.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} {submit.isPending ? 'Submitting' : 'Confirm result'}</Button></div>;
+  return <div className="mt-4 border-t border-border pt-4"><div className="mb-3 flex items-center justify-between"><p className="text-xs font-medium">Record tier result</p><button className="text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)} data-testid="button-close-result"><X className="h-4 w-4" /></button></div><select value={tier} onChange={(event) => setTier(event.target.value as ResultInputTier)} className="focus-ring w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm" data-testid="select-result-tier">{resultTierOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{error && <p className="mt-2 text-xs text-destructive-foreground">{error}</p>}<Button variant="primary" className="mt-3 w-full" disabled={submit.isPending} onClick={() => submit.mutate({ data: { playerDiscordUserId: ticket.player.discordUserId, playerUsername: ticket.player.username, ign: ticket.player.ign, kit, tier, testerId: ticket.tester.discordUserId, testerName: ticket.tester.username, previousTier: ticket.player.currentTier, region: ticket.player.region } }, { onSuccess: () => setError('Result submitted to Discord'), onError: () => setError('Could not submit this result') })} data-testid="button-confirm-result">{submit.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} {submit.isPending ? 'Submitting' : 'Confirm result'}</Button></div>;
 }
 
 function TesterRoster({ testers }: { testers: Tester[] }) {
