@@ -406,7 +406,7 @@
 .podium-card:hover { transform: translateY(-3px); border-color: hsl(37 88% 61% / .38); box-shadow: 0 14px 28px hsl(231 35% 3% / .22); }
 .podium-card-1 { background: linear-gradient(145deg, hsl(37 70% 25% / .55), hsl(229 24% 12%)); border-color: hsl(37 88% 61% / .38); }
 .podium-card-2 { border-color: hsl(191 83% 55% / .24); }
-.leaderboard-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 96px 72px 92px; align-items: center; gap: 12px; padding: 14px 16px; border-top: 1px solid hsl(var(--border)); }
+.leaderboard-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 130px 92px 72px 92px; align-items: center; gap: 12px; padding: 14px 16px; border-top: 1px solid hsl(var(--border)); }
 .leaderboard-row-head { border-top: 0; background: hsl(229 22% 16% / .55); color: hsl(var(--muted-foreground)); font-family: var(--app-font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: .12em; }
 .rank-number { font-family: var(--app-font-mono); font-size: 13px; color: hsl(var(--muted-foreground)); }
 .rank-1 { color: hsl(var(--accent)); font-weight: 700; }
@@ -415,4 +415,4 @@
 .tier-pill { width: fit-content; border: 1px solid hsl(155 72% 48% / .22); border-radius: 999px; padding: 4px 8px; color: hsl(var(--primary)); background: hsl(155 72% 48% / .08); font-family: var(--app-font-mono); font-size: 10px; }
 .point-rule { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid hsl(var(--border)); border-radius: 11px; padding: 10px 11px; background: hsl(229 22% 16% / .42); }
 .point-trophy { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; color: hsl(var(--accent)); background: hsl(37 88% 61% / .12); }
-@media (max-width: 640px) { .leaderboard-row { grid-template-columns: 36px minmax(0, 1fr) 72px 72px; padding-inline: 12px; } .leaderboard-row > :nth-child(3) { display: none; } .leaderboard-row > :nth-child(5) { grid-column: 4; } }
+@media (max-width: 640px) { .leaderboard-row { grid-template-columns: 36px minmax(0, 1fr) 72px 72px; padding-inline: 12px; } .leaderboard-row > :nth-child(3), .leaderboard-row > :nth-child(4) { display: none; } .leaderboard-row > :nth-child(5) { grid-column: 3; } .leaderboard-row > :nth-child(6) { grid-column: 4; } }
