@@ -18,7 +18,7 @@ type GatewaySocket = {
   send: (data: string) => void;
   close: () => void;
 };
-type DiscordOption = { name: string; value?: string; type?: number };
+type DiscordOption = { name: string; value?: string; type?: number; options?: DiscordOption[] };
 type DiscordInteraction = {
   id: string;
   token: string;
@@ -58,6 +58,21 @@ async function createTicketChannel(
   });
   if (!response.ok) throw new Error(`Could not create ticket channel: ${response.status}`);
   return (await response.json()) as { id: string; name: string };
+}
+
+async function deleteAllRoles(guildId: string) {
+  const response = await rest(`/guilds/${guildId}/roles`);
+  if (!response.ok) throw new Error(`Konnte Discord-Rollen nicht lesen: ${response.status}`);
+  const roles = (await response.json()) as Array<{ id: string; name: string; managed?: boolean }>;
+  const deleted: string[] = [];
+  const skipped: string[] = [];
+  for (const role of roles) {
+    if (role.id === guildId || role.managed) continue;
+    const deleteResponse = await rest(`/guilds/${guildId}/roles/${role.id}`, { method: "DELETE" });
+    if (deleteResponse.ok) deleted.push(role.name);
+    else skipped.push(role.name);
+  }
+  return { deleted, skipped };
 }
 
 async function findChannel(guildId: string, name: string) {
@@ -150,6 +165,11 @@ async function registerCommands(applicationId: string) {
       name: "createchannel",
       description: "Erstellt NexusTiers Kanäle und Rollen",
     },
+    {
+      name: "delete",
+      description: "Destruktive NexusTiers-Verwaltung",
+      options: [{ name: "role", description: "Löscht alle benutzerdefinierten Rollen", type: 1, required: true }],
+    },
   ];
   const guildId = process.env.DISCORD_GUILD_ID;
   const path = guildId
@@ -163,6 +183,30 @@ async function handleInteraction(interaction: DiscordInteraction) {
   const name = interaction.data?.name;
   const user = actor(interaction);
   try {
+    if (name === "delete") {
+      const subcommand = interaction.data?.options?.find((item) => item.type === 1)?.name;
+      if (subcommand !== "role") {
+        await respond(interaction, "Nutze /delete role.", true);
+        return;
+      }
+      if (!interaction.guild_id) {
+        await respond(interaction, "Dieser Befehl funktioniert nur auf einem Server.", true);
+        return;
+      }
+      const guildResponse = await rest(`/guilds/${interaction.guild_id}`);
+      if (!guildResponse.ok) throw new Error(`Konnte Server-Eigentümer nicht prüfen: ${guildResponse.status}`);
+      const guild = (await guildResponse.json()) as { owner_id: string };
+      if (guild.owner_id !== user.id) {
+        await respond(interaction, "Nur der Server-Eigentümer darf Rollen löschen.", true);
+        return;
+      }
+      const result = await deleteAllRoles(interaction.guild_id);
+      const skippedMessage = result.skipped.length > 0
+        ? ` ${result.skipped.length} Rollen konnten wegen Discord-Rechten oder der Rollen-Hierarchie nicht gelöscht werden.`
+        : "";
+      await respond(interaction, `Rollen-Löschung abgeschlossen: ${result.deleted.length} Rollen gelöscht.${skippedMessage}`);
+      return;
+    }
     if (["open", "close", "next", "skip", "result", "createchannel"].includes(name ?? "") && !hasTesterPermission(interaction)) {
       await respond(interaction, "Nur der Verified Tester Rank darf diesen Befehl nutzen.", true);
       return;
