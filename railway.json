@@ -2,7 +2,7 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "unzip -oq railway-source.zip -d /tmp/nexustiers-source && cp -a /tmp/nexustiers-source/nexustiers-railway/. . && corepack enable && pnpm install --frozen-lockfile && pnpm run build:railway"
+    "buildCommand": "rm -f /tmp/railway-source.zip && for part in railway-bundle/part-*; do cat \"$part\" >> /tmp/railway-source.zip; done && rm -rf /tmp/nexustiers-source && unzip -oq /tmp/railway-source.zip -d /tmp/nexustiers-source && cp -a /tmp/nexustiers-source/nexustiers-railway/. . && corepack enable && pnpm install --frozen-lockfile && pnpm run build:railway"
   },
   "deploy": {
     "startCommand": "pnpm run start:railway",
