@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "unzip"]
+nixPkgs = ["nodejs_22", "pnpm", "unzip"]
 
 [phases.install]
-cmds = ["npm install -g pnpm@10.26.1 --no-audit --no-fund", "pnpm install --no-frozen-lockfile"]
+cmds = ["pnpm install --no-frozen-lockfile"]
