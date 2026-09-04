@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import {
   closeQueue,
+  getLeaderboard,
   getQueue,
   getState,
   joinQueue,
@@ -24,6 +25,10 @@ function sendError(res: Response, error: unknown, status = 400) {
   const message = error instanceof Error ? error.message : "Request failed";
   res.status(status).json({ error: message });
 }
+
+router.get("/leaderboard", async (_req, res) => {
+  res.json(await getLeaderboard());
+});
 
 router.get("/queues", async (_req, res) => {
   const state = await getState();
