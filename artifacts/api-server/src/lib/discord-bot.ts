@@ -168,7 +168,10 @@ async function registerCommands(applicationId: string) {
     {
       name: "delete",
       description: "Destruktive NexusTiers-Verwaltung",
-      options: [{ name: "role", description: "Löscht alle benutzerdefinierten Rollen", type: 1, required: true }],
+      options: [
+        { name: "role", description: "Löscht alle benutzerdefinierten Rollen", type: 1 },
+        { name: "all", description: "Löscht alle benutzerdefinierten Rollen", type: 1 },
+      ],
     },
   ];
   const guildId = process.env.DISCORD_GUILD_ID;
@@ -185,8 +188,8 @@ async function handleInteraction(interaction: DiscordInteraction) {
   try {
     if (name === "delete") {
       const subcommand = interaction.data?.options?.find((item) => item.type === 1)?.name;
-      if (subcommand !== "role") {
-        await respond(interaction, "Nutze /delete role.", true);
+      if (subcommand !== "role" && subcommand !== "all") {
+        await respond(interaction, "Nutze /delete role oder /delete all.", true);
         return;
       }
       if (!interaction.guild_id) {
