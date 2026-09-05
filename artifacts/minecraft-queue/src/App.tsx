@@ -90,6 +90,19 @@ type LeaderboardRow = {
   lastResult: string;
   kits?: string[];
 };
+type KitRankingPlayer = {
+  ign: string;
+  username: string;
+  tier: string;
+  region?: string;
+  createdAt: string;
+};
+type KitRanking = {
+  kit: Kit;
+  label: string;
+  totalPlayers: number;
+  tiers: Array<{ tier: number; players: KitRankingPlayer[] }>;
+};
 
 const pointRules = [
   { tier: 1, highCode: 'HT1', high: 60, lowCode: 'LT1', low: 45 },
@@ -131,6 +144,18 @@ function useLeaderboard() {
 }
 
 
+
+function useKitRanking(kit: Kit) {
+  return useQuery<KitRanking>({
+    queryKey: ['kit-ranking', kit],
+    queryFn: async () => {
+      const response = await fetch('/api/rankings/' + kit);
+      if (!response.ok) throw new Error('Kit-Ranking konnte nicht geladen werden.');
+      return response.json() as Promise<KitRanking>;
+    },
+    staleTime: 15000,
+  });
+}
 
 function kitMeta(key?: string) {
   return kits.find((kit) => kit.key === key) ?? kits[0];
@@ -286,6 +311,26 @@ function QueuePage() {
   return <div className="animate-rise"><div className="mb-7 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><Link href="/" className="focus-ring hover:text-foreground" data-testid="link-back-overview">Overview</Link><ChevronRight className="h-3.5 w-3.5" /><span className="text-foreground">{meta.label} lane</span></div>{queue.isLoading ? <LoadingState label={`Loading ${meta.label} lane`} /> : queue.isError || !detail ? <ErrorState onRetry={() => queue.refetch()} /> : <><div className="mb-7 flex flex-wrap items-end justify-between gap-5"><div><div className="mb-3 flex items-center gap-2"><span className="font-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: meta.hue }}>KIT 0{kits.findIndex((k) => k.key === kit) + 1}</span><Badge tone={detail.status === 'open' ? 'green' : 'muted'}>{detail.status}</Badge></div><h1 className="text-3xl font-semibold tracking-[-0.04em] md:text-4xl">{detail.label} <span className="text-muted-foreground">queue</span></h1><p className="mt-2 text-sm text-muted-foreground">#{detail.kit}-waitlist · updated {timeAgo(detail.lastUpdate)}</p></div><div className="flex flex-wrap gap-2">{detail.status === 'open' ? <Button variant="danger" onClick={() => action(close, 'Queue closed')} disabled={busy} data-testid="button-close-queue"><Pause className="h-3.5 w-3.5" />Close queue</Button> : <Button variant="primary" onClick={() => action(open, 'Queue opened')} disabled={busy} data-testid="button-open-queue"><Play className="h-3.5 w-3.5" />Open queue</Button>}<Button variant="primary" onClick={() => action(next, 'Next ticket created')} disabled={busy || detail.count === 0} data-testid="button-next-ticket"><TicketIcon className="h-3.5 w-3.5" />Next ticket</Button></div></div>{flash && <div className={`mb-5 flex items-center gap-2 rounded-md border p-3 text-xs ${flash.includes('failed') || flash.includes('Error') ? 'border-destructive/25 bg-destructive/5 text-destructive-foreground' : 'border-primary/25 bg-primary/5 text-primary'}`}><CheckCircle2 className="h-4 w-4" />{flash}<button className="ml-auto" onClick={() => setFlash('')} data-testid="button-dismiss-feedback"><X className="h-3.5 w-3.5" /></button></div>}<div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4"><Metric label="In waitlist" value={detail.count} suffix={`/ ${detail.max}`} icon={Users} tone="amber" /><Metric label="Active testers" value={detail.activeTesters.length} icon={ShieldCheck} tone="green" /><Metric label="Queue mode" value={detail.status === 'open' ? 'ON' : 'OFF'} icon={detail.status === 'open' ? Play : Pause} tone="blue" /><Metric label="Current ticket" value={detail.currentTicket ? '#1' : '—'} icon={TicketIcon} tone="green" /></div><div className="grid gap-8 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.65fr)]"><section><SectionTitle eyebrow="01 / numbered waitlist" title="Players in lane" action={<span className="font-mono text-[10px] text-muted-foreground">FIFO priority</span>} />{detail.entries.length === 0 ? <EmptyState icon={Users} title="Lane is clear" description="Verified players who apply through Discord will line up here." /> : <div className="overflow-hidden rounded-xl border border-border bg-card/60"><div className="hidden grid-cols-[48px_1.4fr_1fr_90px_100px_42px] gap-3 border-b border-border bg-secondary/45 px-4 py-3 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground md:grid"><span>#</span><span>Player</span><span>Discord</span><span>Tier</span><span>Region</span><span /></div>{detail.entries.map((entry, index) => <QueueEntryRow key={entry.id} entry={entry} index={index} />)}</div>}</section><aside className="space-y-5"><CurrentTicket ticket={detail.currentTicket} kit={kit} onSkip={() => action(skip, 'Ticket skipped')} busy={busy} /><TesterRoster testers={detail.activeTesters} /></aside></div></>}</div>;
 }
 
+function KitRankingPage() {
+  const params = useParams<{ kit: string }>();
+  const kit = (kits.some((candidate) => candidate.key === params.kit) ? params.kit : 'uhc') as Kit;
+  const meta = kitMeta(kit);
+  const ranking = useKitRanking(kit);
+  const tiers = ranking.data?.tiers ?? [];
+
+  return <div className="animate-rise">
+    <div className="kit-ranking-hero mb-6 overflow-hidden rounded-2xl border border-border p-6 md:p-8">
+      <div className="relative z-[1] flex flex-wrap items-end justify-between gap-5">
+        <div><div className="mb-3 flex items-center gap-2"><Badge tone="amber"><Trophy className="h-3 w-3" />single kit</Badge><span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">HT first · LT second</span></div><h1 className="text-4xl font-semibold tracking-[-0.06em] md:text-6xl">{ranking.data?.label ?? meta.label}</h1><p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">Die Spieler sind nach Tier-Spalten sortiert. Innerhalb jedes Tiers stehen immer zuerst HT und danach LT.</p></div>
+        <div className="kit-ranking-hero-stat"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Ranked players</p><p className="mt-2 text-3xl font-semibold">{ranking.data?.totalPlayers ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">in {meta.label}</p></div>
+      </div>
+    </div>
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">01 / kit ranking</p><h2 className="text-xl font-semibold tracking-tight">{meta.label} tiers</h2></div><div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground"><span className="kit-legend-dot kit-legend-ht" />HT first<span className="kit-legend-dot kit-legend-lt ml-2" />LT second</div></div>
+    <div className="kit-switcher mb-5 overflow-x-auto rounded-xl border border-border bg-card/60 p-2"><div className="flex min-w-max gap-2">{kits.map((candidate) => <Link key={candidate.key} href={'/rankings/' + candidate.key} className={'rounded-lg px-3 py-2 text-xs font-medium transition ' + (candidate.key === kit ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}><span className="mr-2 font-mono text-[9px]" style={{ color: candidate.hue }}>{candidate.short}</span>{candidate.label}</Link>)}</div></div>
+    {ranking.isLoading ? <LoadingState label="Loading kit ranking" /> : ranking.isError ? <ErrorState onRetry={() => ranking.refetch()} message="The kit ranking is temporarily unavailable." /> : <div className="kit-ranking-scroll overflow-x-auto pb-3"><div className="kit-ranking-grid">{tiers.map((column) => <section className="kit-column" key={column.tier}><div className="kit-column-header"><Trophy className="h-5 w-5" /><span>Tier {column.tier}</span></div><div className="kit-column-body">{column.players.length === 0 ? <div className="kit-column-empty">No players yet</div> : column.players.map((player) => <div className={'kit-player-row ' + (player.tier.startsWith('ht') ? 'kit-player-ht' : 'kit-player-lt')} key={player.ign}><MinecraftHead ign={player.ign} size="h-9 w-9" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{player.ign}</p><p className="truncate text-[10px] text-muted-foreground">{player.username}</p></div><span className="kit-player-tier">{player.tier.slice(0, 2).toUpperCase()}</span></div>)}</div></section>)}</div></div>}
+  </div>;
+}
+
 function QueueEntryRow({ entry, index }: { entry: QueueEntry; index: number }) {
   return <div className="grid gap-3 border-b border-border px-4 py-3.5 last:border-b-0 md:grid-cols-[48px_1.4fr_1fr_90px_100px_42px] md:items-center"><div className="font-mono text-sm text-muted-foreground">{String(entry.position ?? index + 1).padStart(2, '0')}</div><div className="flex items-center gap-3"><Avatar name={entry.ign} hue={index % 2 ? 'hsl(191 83% 55%)' : 'hsl(37 88% 61%)'} /><div><p className="text-sm font-medium">{entry.ign}</p><p className="mt-0.5 font-mono text-[10px] text-muted-foreground">{entry.server || 'unknown server'}</p></div></div><p className="text-xs text-muted-foreground"><span className="mr-1 md:hidden">Discord ·</span>{entry.username}</p><Badge tone="amber">{entry.currentTier || 'N/A'}</Badge><p className="text-xs text-muted-foreground">{entry.region} <span className="ml-1 font-mono text-[9px] text-muted-foreground/70">{timeAgo(entry.joinedAt)}</span></p><Link href={`/players?ign=${encodeURIComponent(entry.ign)}`} className="focus-ring hidden justify-self-end rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-primary md:inline-flex" data-testid={`link-player-${entry.id}`}><ExternalLink className="h-3.5 w-3.5" /></Link></div>;
 }
@@ -353,7 +398,7 @@ function SetupPage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={Overview} /><Route path="/leaderboard" component={LeaderboardPage} /><Route path="/queues/:kit" component={QueuePage} /><Route path="/players" component={PlayersPage} /><Route path="/setup" component={SetupPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={Overview} /><Route path="/leaderboard" component={LeaderboardPage} /><Route path="/rankings/:kit" component={KitRankingPage} /><Route path="/queues/:kit" component={QueuePage} /><Route path="/players" component={PlayersPage} /><Route path="/setup" component={SetupPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
 }
 
 function App() {
