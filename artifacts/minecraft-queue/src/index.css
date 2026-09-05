@@ -776,3 +776,80 @@
   .profile-modal-content { padding-inline: 1rem; }
   .profile-section-label { font-size: 1.35rem; }
 }
+
+
+/* NexusTiers polish pass — live control-room surface */
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { background: radial-gradient(circle at 12% 0%, hsl(191 83% 55% / .055), transparent 28rem), hsl(var(--background)); }
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 78% -8%, hsl(154 40% 18% / .26), transparent 32rem),
+    radial-gradient(circle at 8% 78%, hsl(191 83% 55% / .055), transparent 28rem),
+    hsl(var(--background));
+}
+
+.app-shell::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  opacity: .22;
+  background-image: linear-gradient(hsl(225 20% 22% / .12) 1px, transparent 1px), linear-gradient(90deg, hsl(225 20% 22% / .12) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.app-shell main > header {
+  box-shadow: 0 1px 0 hsl(var(--border)), 0 14px 34px hsl(231 35% 3% / .10);
+}
+
+.grid-texture {
+  background-image:
+    linear-gradient(hsl(225 20% 26% / .24) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(225 20% 26% / .24) 1px, transparent 1px),
+    radial-gradient(circle at 86% 18%, hsl(155 72% 48% / .13), transparent 19rem),
+    linear-gradient(135deg, hsl(229 24% 14% / .96), hsl(229 24% 10% / .72));
+  background-size: 28px 28px, 28px 28px, auto, auto;
+  box-shadow: 0 24px 70px hsl(231 35% 3% / .18);
+}
+
+[data-testid^='card-queue-'] {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, hsl(229 24% 15% / .92), hsl(229 24% 11% / .82));
+  box-shadow: 0 10px 28px hsl(231 35% 3% / .10);
+}
+
+[data-testid^='card-queue-']::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 42%;
+  height: 1px;
+  content: '';
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / .58));
+  opacity: .5;
+  transition: width .25s ease, opacity .25s ease;
+}
+
+[data-testid^='card-queue-']:hover::after,
+[data-testid^='card-queue-']:focus-visible::after { width: 72%; opacity: 1; }
+
+.stat-number { text-shadow: 0 0 22px hsl(var(--primary) / .10); }
+
+button, a, input, select { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+
+@media (max-width: 767px) {
+  .app-shell main > header { height: 60px; }
+  .grid-texture { background-size: 22px 22px, 22px 22px, auto, auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
