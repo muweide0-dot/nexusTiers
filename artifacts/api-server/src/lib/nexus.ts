@@ -328,6 +328,45 @@ export async function getLeaderboard() {
     .map((player, index) => ({ ...player, rank: index + 1 }));
 }
 
+export async function getKitRanking(kitValue: string) {
+  if (!KITS.includes(kitValue as Kit)) throw new Error("Unknown kit");
+  const kit = kitValue as Kit;
+  const state = await getState();
+  const latestByPlayer = new Map<string, TierResult>();
+
+  for (const result of state.results) {
+    if (result.kit !== kit) continue;
+    const key = result.playerDiscordUserId ?? result.ign.toLowerCase();
+    const current = latestByPlayer.get(key);
+    if (!current || new Date(result.createdAt).getTime() > new Date(current.createdAt).getTime()) {
+      latestByPlayer.set(key, result);
+    }
+  }
+
+  const tiers = Array.from({ length: 5 }, (_, index) => ({
+    tier: index + 1,
+    players: [] as Array<{ ign: string; username: string; tier: string; region?: string; createdAt: string }>,
+  }));
+
+  for (const result of latestByPlayer.values()) {
+    const match = result.tier.toLowerCase().match(/^(?:ht|lt)([1-5])$/);
+    if (!match) continue;
+    tiers[Number(match[1]) - 1].players.push({
+      ign: result.ign,
+      username: result.playerUsername,
+      tier: result.tier.toLowerCase(),
+      region: result.region,
+      createdAt: result.createdAt,
+    });
+  }
+
+  for (const column of tiers) {
+    column.players.sort((a, b) => tierRank(a.tier) - tierRank(b.tier) || a.ign.localeCompare(b.ign));
+  }
+
+  return { kit, label: KIT_LABELS[kit], totalPlayers: latestByPlayer.size, tiers };
+}
+
 export async function openQueue(_input: unknown, kitValue: string) {
   const kit = OpenQueueParams.parse({ kit: kitValue }).kit as Kit;
   const queue = (await getState()).queues[kit];
