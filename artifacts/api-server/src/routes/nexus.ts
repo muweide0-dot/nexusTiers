@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import {
   closeQueue,
   getLeaderboard,
+  getKitRanking,
   getQueue,
   getState,
   joinQueue,
@@ -28,6 +29,14 @@ function sendError(res: Response, error: unknown, status = 400) {
 
 router.get("/leaderboard", async (_req, res) => {
   res.json(await getLeaderboard());
+});
+
+router.get("/rankings/:kit", async (req, res) => {
+  try {
+    res.json(await getKitRanking(String(req.params.kit)));
+  } catch (error) {
+    sendError(res, error, 404);
+  }
 });
 
 router.get("/queues", async (_req, res) => {
