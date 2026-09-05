@@ -9,6 +9,7 @@ import {
   submitResult,
   verifyAccount,
   KITS,
+  KIT_LABELS,
   TIERS,
 } from "./nexus";
 import { logger } from "./logger";
@@ -75,6 +76,68 @@ async function deleteAllRoles(guildId: string) {
   return { deleted, skipped };
 }
 
+const TIER_ROLE_COLORS: Record<string, number> = {
+  lt5: 0x95a5a6,
+  ht5: 0x7f8c8d,
+  lt4: 0x2ecc71,
+  ht4: 0x27ae60,
+  lt3: 0x3498db,
+  ht3: 0x2980b9,
+  lt2: 0x9b59b6,
+  ht2: 0x8e44ad,
+  lt1: 0xf1c40f,
+  ht1: 0xe74c3c,
+};
+
+async function createTierRoles(guildId: string) {
+  const response = await rest("/guilds/" + guildId + "/roles");
+  if (!response.ok) throw new Error("Konnte Discord-Rollen nicht lesen: " + response.status);
+  const roles = (await response.json()) as Array<{
+    id: string;
+    name: string;
+    managed?: boolean;
+    color?: number;
+    hoist?: boolean;
+  }> ;
+  const desiredRoles = KITS.flatMap((kit) =>
+    TIERS.filter((tier) => tier !== "N/A").map((tier) => ({
+      name: tier.toUpperCase() + " " + KIT_LABELS[kit],
+      color: TIER_ROLE_COLORS[tier],
+    })),
+  );
+  const created: string[] = [];
+  const updated: string[] = [];
+  const skipped: string[] = [];
+
+  for (const desired of desiredRoles) {
+    const existing = roles.find((role) => role.name.toLowerCase() === desired.name.toLowerCase());
+    if (existing) {
+      if (existing.managed) {
+        skipped.push(desired.name);
+        continue;
+      }
+      if (existing.name !== desired.name || existing.color !== desired.color || existing.hoist !== true) {
+        const updateResponse = await rest("/guilds/" + guildId + "/roles/" + existing.id, {
+          method: "PATCH",
+          body: JSON.stringify({ name: desired.name, color: desired.color, hoist: true, mentionable: false }),
+        });
+        if (!updateResponse.ok) throw new Error("Konnte Rolle \"" + desired.name + "\" nicht aktualisieren: " + updateResponse.status);
+        updated.push(desired.name);
+      }
+      continue;
+    }
+
+    const createResponse = await rest("/guilds/" + guildId + "/roles", {
+      method: "POST",
+      body: JSON.stringify({ name: desired.name, color: desired.color, hoist: true, mentionable: false }),
+    });
+    if (!createResponse.ok) throw new Error("Konnte Rolle \"" + desired.name + "\" nicht erstellen: " + createResponse.status);
+    created.push(desired.name);
+  }
+
+  return { created, updated, skipped, total: desiredRoles.length };
+}
+
 async function findChannel(guildId: string, name: string) {
   const response = await rest(`/guilds/${guildId}/channels`);
   if (!response.ok) return null;
@@ -103,6 +166,17 @@ function hasTesterPermission(interaction: DiscordInteraction) {
   const configuredRole = process.env.DISCORD_TESTER_ROLE_ID;
   const hasRole = Boolean(configuredRole && interaction.member?.roles?.includes(configuredRole));
   return administrator || hasRole;
+}
+
+function hasManageRolesPermission(interaction: DiscordInteraction) {
+  const permissions = BigInt(interaction.member?.permissions ?? "0");
+  const administrator = (permissions & 0x8n) === 0x8n;
+  const manageRoles = (permissions & 0x10000000n) === 0x10000000n;
+  return administrator || manageRoles;
+}
+
+function subcommand(interaction: DiscordInteraction) {
+  return interaction.data?.options?.find((item) => item.type === 1)?.name;
 }
 
 async function respond(interaction: DiscordInteraction, content: string, ephemeral = false) {
@@ -166,6 +240,11 @@ async function registerCommands(applicationId: string) {
       description: "Erstellt NexusTiers Kanäle und Rollen",
     },
     {
+      name: "create",
+      description: "Erstellt NexusTiers Tier-Rollen",
+      options: [{ name: "role", description: "Erstellt alle farbigen Tier-Rollen", type: 1 }],
+    },
+    {
       name: "delete",
       description: "Destruktive NexusTiers-Verwaltung",
       options: [
@@ -186,6 +265,29 @@ async function handleInteraction(interaction: DiscordInteraction) {
   const name = interaction.data?.name;
   const user = actor(interaction);
   try {
+    if (name === "create") {
+      if (subcommand(interaction) !== "role") {
+        await respond(interaction, "Nutze den Befehl als \`/create role\`.", true);
+        return;
+      }
+      if (!interaction.guild_id) {
+        await respond(interaction, "Dieser Befehl funktioniert nur auf einem Server.", true);
+        return;
+      }
+      if (!hasManageRolesPermission(interaction)) {
+        await respond(interaction, "Du brauchst die Berechtigung \`Manage Roles\` für diesen Befehl.", true);
+        return;
+      }
+      const roleResult = await createTierRoles(interaction.guild_id);
+      const skippedMessage = roleResult.skipped.length > 0
+        ? " " + roleResult.skipped.length + " verwaltete Rollen wurden übersprungen."
+        : "";
+      await respond(
+        interaction,
+        "Tier-Rollen fertig: " + roleResult.created.length + " erstellt, " + roleResult.updated.length + " aktualisiert von " + roleResult.total + ". Alle Tier-Rollen sind farbig und separat sichtbar." + skippedMessage,
+      );
+      return;
+    }
     if (name === "delete") {
       if (!interaction.guild_id) {
         await respond(interaction, "Dieser Befehl funktioniert nur auf einem Server.", true);
