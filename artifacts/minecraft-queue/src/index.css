@@ -562,3 +562,217 @@
     width: 100%;
   }
 }
+
+
+/* Player profile overlay inspired by the compact mobile ranking profile. */
+.profile-player-button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.profile-player-button:focus-visible {
+  outline: 2px solid hsl(155 72% 48%);
+  outline-offset: 3px;
+}
+
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 1rem;
+  background: hsl(229 35% 3% / 0.84);
+  backdrop-filter: blur(8px);
+}
+
+.profile-modal {
+  position: relative;
+  width: min(100%, 430px);
+  max-height: min(760px, calc(100dvh - 2rem));
+  overflow-y: auto;
+  border: 1px solid hsl(214 27% 28%);
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, hsl(220 29% 11%), hsl(229 22% 10%));
+  box-shadow: 0 30px 90px hsl(229 35% 2% / 0.6);
+}
+
+.profile-modal-close {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  z-index: 2;
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: hsl(214 32% 19%);
+  color: hsl(214 27% 78%);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.profile-modal-close:hover {
+  background: hsl(214 32% 25%);
+  color: white;
+  transform: rotate(90deg);
+}
+
+.profile-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4.5rem 1.4rem 1.6rem;
+}
+
+.profile-modal-content > img {
+  border: 2px solid hsl(214 27% 62%);
+  border-radius: 999px;
+  box-shadow: 0 0 0 7px hsl(214 27% 30% / 0.18), 0 12px 30px hsl(229 35% 2% / 0.45);
+}
+
+.profile-modal-name {
+  margin-top: 0.45rem;
+  color: hsl(214 27% 86%);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.profile-title-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, hsl(43 44% 24%), hsl(50 34% 19%));
+  padding: 0.5rem 1rem;
+  color: hsl(49 100% 62%);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.profile-region {
+  margin-top: 1rem;
+  color: hsl(229 12% 58%);
+  font-size: 0.95rem;
+}
+
+.profile-section {
+  width: 100%;
+  margin-top: 1.7rem;
+}
+
+.profile-section-label {
+  margin-bottom: 0.65rem;
+  color: hsl(214 27% 76%);
+  font-size: 1.55rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.profile-position-row {
+  display: grid;
+  grid-template-columns: 5.8rem minmax(0, 1fr) 4.8rem;
+  align-items: center;
+  overflow: hidden;
+  min-height: 3.45rem;
+  border: 2px solid hsl(214 27% 28%);
+  border-radius: 0.7rem;
+  background: linear-gradient(90deg, hsl(197 27% 62%), hsl(214 32% 14%) 31%);
+}
+
+.profile-position-number {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-left: 0.85rem;
+  color: hsl(220 29% 8%);
+  font-size: 2rem;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.profile-position-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: hsl(214 27% 94%);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.profile-position-points {
+  padding-right: 0.55rem;
+  color: hsl(214 27% 76%);
+  font-size: 0.78rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.profile-tier-strip {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  min-height: 5.2rem;
+  border: 2px solid hsl(214 27% 28%);
+  border-radius: 0.7rem;
+  background: hsl(229 22% 9% / 0.7);
+  padding: 0.65rem;
+  scrollbar-color: hsl(155 72% 48% / 0.55) transparent;
+}
+
+.profile-tier-badge {
+  display: flex;
+  flex: 0 0 3.25rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  color: hsl(49 100% 62%);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.profile-tier-lt {
+  color: hsl(214 27% 74%);
+}
+
+.profile-tier-icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 2px solid hsl(269 72% 69% / 0.55);
+  border-radius: 999px;
+  background: hsl(269 72% 69% / 0.13);
+  color: hsl(269 72% 80%);
+}
+
+.profile-tier-lt .profile-tier-icon {
+  border-color: hsl(1 74% 61% / 0.5);
+  background: hsl(1 74% 61% / 0.12);
+  color: hsl(1 74% 74%);
+}
+
+.profile-empty {
+  display: grid;
+  width: 100%;
+  place-items: center;
+  color: hsl(229 12% 58%);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .profile-modal-backdrop { padding: 0.5rem; }
+  .profile-modal { max-height: calc(100dvh - 1rem); border-radius: 1.35rem; }
+  .profile-modal-content { padding-inline: 1rem; }
+  .profile-section-label { font-size: 1.35rem; }
+}
