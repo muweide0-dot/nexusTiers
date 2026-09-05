@@ -1,5 +1,6 @@
 import {
   closeQueue,
+  clearPlayerTiers,
   getState,
   joinQueue,
   nextTicket,
@@ -252,6 +253,11 @@ async function registerCommands(applicationId: string) {
         { name: "all", description: "Löscht alle benutzerdefinierten Rollen", type: 1 },
       ],
     },
+    {
+      name: "clear",
+      description: "Entfernt alle Website-Tiers eines Users",
+      options: [{ name: "user", description: "Discord-User, dessen Tiers entfernt werden", type: 6, required: true }],
+    },
   ];
   const guildId = process.env.DISCORD_GUILD_ID;
   const path = guildId
@@ -306,6 +312,28 @@ async function handleInteraction(interaction: DiscordInteraction) {
         ? ` ${roleResult.skipped.length} Rollen konnten wegen Discord-Rechten oder der Rollen-Hierarchie nicht gelöscht werden.`
         : "";
       await respond(interaction, `Rollen-Löschung abgeschlossen: ${roleResult.deleted.length} Rollen gelöscht.${skippedMessage}`);
+      return;
+    }
+    if (name === "clear") {
+      if (!interaction.guild_id) {
+        await respond(interaction, "Dieser Befehl funktioniert nur auf einem Server.", true);
+        return;
+      }
+      const guildResponse = await rest(`/guilds/${interaction.guild_id}`);
+      if (!guildResponse.ok) throw new Error(`Konnte Server-Eigentümer nicht prüfen: ${guildResponse.status}`);
+      const guild = (await guildResponse.json()) as { owner_id: string };
+      if (guild.owner_id !== user.id) {
+        await respond(interaction, "Nur der Server-Eigentümer darf Website-Tiers löschen.", true);
+        return;
+      }
+      const targetUserId = String(option(interaction, "user"));
+      const cleared = await clearPlayerTiers(targetUserId);
+      const resultLabel = cleared.removedCount === 1 ? "Ergebnis" : "Ergebnisse";
+      await respond(
+        interaction,
+        `Website-Tiers für <@${targetUserId}> wurden entfernt: ${cleared.removedCount} ${resultLabel}.`,
+        true,
+      );
       return;
     }
     if (["open", "close", "next", "skip", "result", "createchannel"].includes(name ?? "") && !hasTesterPermission(interaction)) {
