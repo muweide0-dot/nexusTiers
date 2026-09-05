@@ -257,6 +257,7 @@ async function registerCommands(applicationId: string) {
   const path = guildId
     ? `/applications/${applicationId}/guilds/${guildId}/commands`
     : `/applications/${applicationId}/commands`;
+  logger.info({ path, commands: commands.map((command) => command.name) }, "Registering NexusTiers slash commands");
   const response = await rest(path, { method: "PUT", body: JSON.stringify(commands) });
   if (!response.ok) throw new Error(`Could not register commands: ${response.status} ${await response.text()}`);
 }
