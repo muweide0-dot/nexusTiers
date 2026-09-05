@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  ChevronUp,
   CircleDot,
   Command,
   Copy,
@@ -346,6 +347,14 @@ function KitRankingPage() {
   const meta = kitMeta(kit);
   const ranking = useKitRanking(kit);
   const tiers = ranking.data?.tiers ?? [];
+  const orderedTiers = tiers.map((column) => ({
+    ...column,
+    players: [...column.players].sort((a, b) => {
+      const aOrder = a.tier.toLowerCase().startsWith('ht') ? 0 : 1;
+      const bOrder = b.tier.toLowerCase().startsWith('ht') ? 0 : 1;
+      return aOrder - bOrder || a.ign.localeCompare(b.ign);
+    }),
+  }));
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
 
   return <div className="animate-rise">
@@ -357,7 +366,7 @@ function KitRankingPage() {
     </div>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">01 / kit ranking</p><h2 className="text-xl font-semibold tracking-tight">{meta.label} tiers</h2></div><div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground"><span className="kit-legend-dot kit-legend-ht" />HT first<span className="kit-legend-dot kit-legend-lt ml-2" />LT second</div></div>
     <div className="kit-switcher mb-5 overflow-x-auto rounded-xl border border-border bg-card/60 p-2"><div className="flex min-w-max gap-2">{kits.map((candidate) => <Link key={candidate.key} href={'/rankings/' + candidate.key} className={'rounded-lg px-3 py-2 text-xs font-medium transition ' + (candidate.key === kit ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}><span className="mr-2 font-mono text-[9px]" style={{ color: candidate.hue }}>{candidate.short}</span>{candidate.label}</Link>)}</div></div>
-    {ranking.isLoading ? <LoadingState label="Loading kit ranking" /> : ranking.isError ? <ErrorState onRetry={() => ranking.refetch()} message="The kit ranking is temporarily unavailable." /> : <div className="kit-ranking-scroll overflow-x-auto pb-3"><div className="kit-ranking-grid">{tiers.map((column) => <section className="kit-column" key={column.tier}><div className="kit-column-header"><Trophy className="h-5 w-5" /><span>Tier {column.tier}</span></div><div className="kit-column-body">{column.players.length === 0 ? <div className="kit-column-empty">No players yet</div> : column.players.map((player) => <button type="button" className={'kit-player-row profile-player-button ' + (player.tier.startsWith('ht') ? 'kit-player-ht' : 'kit-player-lt')} key={player.ign} onClick={() => setSelectedPlayer(player.ign)} aria-label={'Open profile for ' + player.ign}><MinecraftHead ign={player.ign} size="h-9 w-9" /><div className="min-w-0 flex-1 text-left"><p className="truncate text-sm font-medium">{player.ign}</p><p className="truncate text-[10px] text-muted-foreground">{player.username}</p></div><span className="kit-player-tier">{player.tier.slice(0, 2).toUpperCase()}</span></button>)}</div></section>)}</div></div>}
+    {ranking.isLoading ? <LoadingState label="Loading kit ranking" /> : ranking.isError ? <ErrorState onRetry={() => ranking.refetch()} message="The kit ranking is temporarily unavailable." /> : <div className="kit-ranking-scroll overflow-x-auto pb-3"><div className="kit-ranking-grid">{orderedTiers.map((column) => <section className="kit-column" key={column.tier}><div className="kit-column-header"><Trophy className="h-5 w-5" /><span>Tier {column.tier}</span></div><div className="kit-column-body">{column.players.length === 0 ? <div className="kit-column-empty">No players yet</div> : column.players.map((player) => <button type="button" className={'kit-player-row profile-player-button ' + (player.tier.startsWith('ht') ? 'kit-player-ht' : 'kit-player-lt')} key={player.ign} onClick={() => setSelectedPlayer(player.ign)} aria-label={'Open profile for ' + player.ign + ' (' + player.tier.toUpperCase() + ')'}><MinecraftHead ign={player.ign} size="h-9 w-9" /><div className="min-w-0 flex-1 text-left"><p className="truncate text-sm font-medium">{player.ign}</p><p className="truncate text-[10px] text-muted-foreground">{player.username}</p></div><ChevronUp className="h-5 w-5 shrink-0 text-muted-foreground/60" /></button>)}</div></section>)}</div></div>}
     {selectedPlayer && <PlayerProfileDialog ign={selectedPlayer} onClose={() => setSelectedPlayer(null)} />}
   </div>;
 }
