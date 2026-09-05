@@ -222,67 +222,23 @@ function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; title: str
 }
 
 function Shell({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
-  return <div className="railway-shell min-h-[100dvh] text-foreground">
-    <header className="railway-topbar">
-      <Link href="/" className="railway-brand" data-testid="link-home">
-        <span className="railway-brand-mark"><Command className="h-4 w-4" /></span>
-        <span>NexusTiers</span>
-      </Link>
-      <div className="flex items-center gap-4">
-        <label className="railway-search hidden sm:flex">
-          <Search className="h-4 w-4" />
-          <input aria-label="Search player" placeholder="Search player..." />
-        </label>
-        <Button variant="quiet" className="px-2" onClick={() => setMobileNav((open) => !open)} data-testid="button-open-navigation" aria-label="Open navigation">
-          <Menu className="h-5 w-5" />
-        </Button>
-      </div>
-    </header>
-    {mobileNav && <nav className="railway-mobile-nav">
-      <Link href="/" onClick={() => setMobileNav(false)}>Leaderboard</Link>
-      <Link href="/players" onClick={() => setMobileNav(false)}>Players</Link>
-      <Link href="/setup" onClick={() => setMobileNav(false)}>Server setup</Link>
-    </nav>}
-    <main className="mx-auto max-w-[1180px] px-5 py-8 md:px-10 md:py-12">{children}</main>
-  </div>;
-}
-
-function RailwayLeaderboardPage() {
-  const leaderboard = useLeaderboard();
-  const [selectedKit, setSelectedKit] = useState<Kit | 'all'>('all');
-  const allRows = leaderboard.data ?? [];
-  const rows = selectedKit === 'all'
-    ? allRows
-    : allRows.filter((row) => (row.kits ?? []).some((kit) => kit.toLowerCase() === selectedKit || kit.toLowerCase() === kitMeta(selectedKit).label.toLowerCase()));
-
-  return <div className="railway-leaderboard animate-rise">
-    <h1 className="railway-wordmark">NexusTiers</h1>
-    <div className="railway-divider" />
-    <section className="mt-9">
-      <p className="railway-kicker">01 / LEADERBOARD</p>
-      <h2 className="railway-title">Top players</h2>
-      <div className="railway-tabs" role="tablist" aria-label="Leaderboard kits">
-        <button className={selectedKit === 'all' ? 'is-active' : ''} onClick={() => setSelectedKit('all')} role="tab" aria-selected={selectedKit === 'all'}>Leaderboard</button>
-        {kits.map((kit) => <button key={kit.key} className={selectedKit === kit.key ? 'is-active' : ''} onClick={() => setSelectedKit(kit.key)} role="tab" aria-selected={selectedKit === kit.key}>
-          <span className="railway-kit-icon" style={{ color: kit.hue }}>{kit.short.slice(0, 1)}</span>{kit.label}
-        </button>)}
-      </div>
-      <div className="railway-ranking-card">
-        <div className="railway-ranking-heading"><span>RANKINGS</span><span>VERIFIED PLAYERS</span></div>
-        {leaderboard.isLoading ? <div className="railway-empty">Loading rankings…</div> : leaderboard.isError ? <div className="railway-empty">Leaderboard could not be loaded.</div> : rows.length === 0 ? <div className="railway-empty">No verified players yet.</div> : rows.map((row, index) => <div className="railway-ranking-row" key={row.ign}>
-          <span className="railway-rank">{String(index + 1).padStart(2, '0')}</span>
-          <MinecraftHead ign={row.ign} size="h-10 w-10" />
-          <div className="min-w-0">
-            <p className="railway-player-name">{row.ign}</p>
-            <p className="railway-player-handle">{row.username || `${row.ign.toLowerCase()}-verified`}</p>
-          </div>
-          <div className="railway-player-stat"><span>RESULTS</span><strong>{row.results}</strong></div>
-          <div className="railway-player-stat overall"><span>OVERALL</span><strong>{row.bestTier || '—'}</strong></div>
-        </div>)}
-      </div>
-    </section>
-    <p className="railway-footer-label">NEXUSTIERS / PLAYER RANKINGS</p>
+  const nav = [
+    { href: '/', label: 'Overview', icon: LayoutDashboard },
+    { href: '/players', label: 'Players', icon: Search },
+    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/setup', label: 'Server setup', icon: Settings2 },
+  ];
+  return <div className="app-shell min-h-[100dvh] text-foreground">
+    <aside className={`fixed inset-y-0 left-0 z-30 flex w-[248px] flex-col border-r border-sidebar-border bg-sidebar/95 px-4 py-5 backdrop-blur-xl transition-transform md:translate-x-0 ${mobileNav ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="flex items-center gap-3 px-2"><div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-[0_0_0_4px_hsl(155_72%_48%_/_0.10)]"><Command className="h-5 w-5" /></div><div><p className="font-semibold tracking-tight">NexusTiers</p><p className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground">control bridge</p></div></div>
+      <div className="mt-9 px-2"><p className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Command</p>{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setMobileNav(false)} className={`focus-ring mb-1 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition ${location === href ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`} data-testid={`link-${label.toLowerCase().replace(/\s/g, '-')}`}><Icon className="h-4 w-4" />{label}{location === href && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}</Link>)}</div>
+      <div className="mt-7 px-2"><div className="mb-2 flex items-center justify-between"><p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Kit lanes</p><Badge tone="green">8 online</Badge></div>{kits.map((kit) => <Link key={kit.key} href={`/queues/${kit.key}`} onClick={() => setMobileNav(false)} className="focus-ring group mb-0.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground" data-testid={`link-queue-${kit.key}`}><span className="grid h-5 w-5 place-items-center rounded border border-white/10 font-mono text-[8px] font-medium" style={{ color: kit.hue }}>{kit.short}</span><span>{kit.label}</span><ChevronRight className="ml-auto h-3.5 w-3.5 opacity-0 transition group-hover:opacity-100" /></Link>)}</div>
+      <div className="mt-auto rounded-lg border border-primary/15 bg-primary/5 p-3"><div className="flex items-center gap-2"><span className="animate-pulse-dot h-2 w-2 rounded-full bg-primary" /><span className="font-mono text-[10px] uppercase tracking-[0.12em] text-primary">Railway relay online</span></div><p className="mt-2 text-xs leading-relaxed text-muted-foreground">Bot gateway is listening for queue events.</p></div>
+    </aside>
+    {mobileNav && <button className="fixed inset-0 z-20 bg-background/70 md:hidden" onClick={() => setMobileNav(false)} aria-label="Close navigation" data-testid="button-close-navigation" />}
+    <main className="min-h-[100dvh] md:pl-[248px]"><header className="sticky top-0 z-10 flex h-[68px] items-center justify-between border-b border-border/80 bg-background/80 px-5 backdrop-blur-xl md:px-8"><div className="flex items-center gap-3"><Button variant="quiet" className="px-2 md:hidden" onClick={() => setMobileNav(true)} data-testid="button-open-navigation"><Menu className="h-5 w-5" /></Button><div className="hidden items-center gap-2 text-xs text-muted-foreground md:flex"><span className="text-primary">NEXUS</span><span>/</span><span>COMMAND BRIDGE</span></div><div className="flex items-center gap-2 md:hidden"><Command className="h-4 w-4 text-primary" /><span className="font-semibold">NexusTiers</span></div></div><div className="flex items-center gap-4"><div className="hidden items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-primary" />live sync</div><Avatar name="Nexus Control" hue="hsl(191 83% 55%)" /></div></header><div className="mx-auto max-w-[1440px] p-5 md:p-8">{children}</div></main>
   </div>;
 }
 
@@ -494,7 +450,7 @@ function SetupPage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={RailwayLeaderboardPage} /><Route path="/leaderboard" component={RailwayLeaderboardPage} /><Route path="/overview" component={Overview} /><Route path="/rankings/:kit" component={KitRankingPage} /><Route path="/queues/:kit" component={QueuePage} /><Route path="/players" component={PlayersPage} /><Route path="/setup" component={SetupPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={Overview} /><Route path="/leaderboard" component={LeaderboardPage} /><Route path="/rankings/:kit" component={KitRankingPage} /><Route path="/queues/:kit" component={QueuePage} /><Route path="/players" component={PlayersPage} /><Route path="/setup" component={SetupPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
 }
 
 function App() {
