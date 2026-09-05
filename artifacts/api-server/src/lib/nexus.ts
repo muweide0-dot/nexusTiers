@@ -468,6 +468,18 @@ export async function verifyAccount(input: unknown) {
   return verified;
 }
 
+export async function clearPlayerTiers(discordUserId: string) {
+  const state = await getState();
+  const verifiedIgn = state.verified.find((item) => item.discordUserId === discordUserId)?.ign.toLowerCase();
+  const removed = state.results.filter((result) =>
+    result.playerDiscordUserId === discordUserId ||
+    (verifiedIgn && result.ign.toLowerCase() === verifiedIgn),
+  );
+  state.results = state.results.filter((result) => !removed.includes(result));
+  await saveState(state);
+  return { removedCount: removed.length };
+}
+
 export async function submitResult(input: unknown) {
   const data = SubmitResultBody.parse(input);
   const state = await getState();
