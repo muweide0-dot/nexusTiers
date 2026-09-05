@@ -310,10 +310,22 @@ function tierRank(tier: string) {
   return Number(match[1]) * 2 + (tier.toLowerCase().startsWith("lt") ? 1 : 0);
 }
 
+function latestResultsByPlayerAndKit(results: TierResult[]) {
+  const latest = new Map<string, TierResult>();
+  for (const result of results) {
+    const playerKey = result.playerDiscordUserId ?? result.ign.toLowerCase();
+    const key = `${playerKey}::${result.kit}`;
+    const current = latest.get(key);
+    if (!current || new Date(result.createdAt).getTime() > new Date(current.createdAt).getTime()) {
+      latest.set(key, result);
+    }
+  }
+  return Array.from(latest.values());
+}
 export async function getLeaderboard() {
   const state = await getState();
   const players = new Map<string, { username: string; ign: string; points: number; results: number; bestTier: string; lastResult: string; kits: string[] }>();
-  for (const result of state.results) {
+  for (const result of latestResultsByPlayerAndKit(state.results)) {
     const key = result.playerDiscordUserId ?? result.ign.toLowerCase();
     const current = players.get(key) ?? { username: result.playerUsername, ign: result.ign, points: 0, results: 0, bestTier: "N/A", lastResult: result.createdAt, kits: [] };
     current.points += TIER_POINTS[result.tier.toLowerCase()] ?? 0;
@@ -327,28 +339,18 @@ export async function getLeaderboard() {
     .sort((a, b) => b.points - a.points || b.results - a.results || a.ign.localeCompare(b.ign))
     .map((player, index) => ({ ...player, rank: index + 1 }));
 }
-
 export async function getKitRanking(kitValue: string) {
   if (!KITS.includes(kitValue as Kit)) throw new Error("Unknown kit");
   const kit = kitValue as Kit;
   const state = await getState();
-  const latestByPlayer = new Map<string, TierResult>();
-
-  for (const result of state.results) {
-    if (result.kit !== kit) continue;
-    const key = result.playerDiscordUserId ?? result.ign.toLowerCase();
-    const current = latestByPlayer.get(key);
-    if (!current || new Date(result.createdAt).getTime() > new Date(current.createdAt).getTime()) {
-      latestByPlayer.set(key, result);
-    }
-  }
+  const latestForKit = latestResultsByPlayerAndKit(state.results).filter((result) => result.kit === kit);
 
   const tiers = Array.from({ length: 5 }, (_, index) => ({
     tier: index + 1,
     players: [] as Array<{ ign: string; username: string; tier: string; region?: string; createdAt: string }>,
   }));
 
-  for (const result of latestByPlayer.values()) {
+  for (const result of latestForKit) {
     const match = result.tier.toLowerCase().match(/^(?:ht|lt)([1-5])$/);
     if (!match) continue;
     tiers[Number(match[1]) - 1].players.push({
@@ -364,9 +366,8 @@ export async function getKitRanking(kitValue: string) {
     column.players.sort((a, b) => tierRank(a.tier) - tierRank(b.tier) || a.ign.localeCompare(b.ign));
   }
 
-  return { kit, label: KIT_LABELS[kit], totalPlayers: latestByPlayer.size, tiers };
+  return { kit, label: KIT_LABELS[kit], totalPlayers: latestForKit.length, tiers };
 }
-
 export async function openQueue(_input: unknown, kitValue: string) {
   const kit = OpenQueueParams.parse({ kit: kitValue }).kit as Kit;
   const queue = (await getState()).queues[kit];
@@ -508,7 +509,7 @@ export async function submitResult(input: unknown) {
 export async function playerProfile(ignValue: string) {
   const ign = GetPlayerTiersParams.parse({ ign: ignValue }).ign;
   const state = await getState();
-  const tiers = state.results.filter((result) => result.ign.toLowerCase() === ign.toLowerCase());
+  const tiers = latestResultsByPlayerAndKit(state.results).filter((result) => result.ign.toLowerCase() === ign.toLowerCase());
   const rank = (tier: string) => (tier === "N/A" ? 999 : Number(tier.slice(2)) * 2 + (tier.startsWith("lt") ? 1 : 0));
   const bestTier = tiers.sort((a, b) => rank(a.tier) - rank(b.tier))[0]?.tier ?? "N/A";
   return { ign, username: tiers[0]?.playerUsername ?? ign, bestTier, tiers };
