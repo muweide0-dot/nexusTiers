@@ -190,6 +190,18 @@ async function respond(interaction: DiscordInteraction, content: string, ephemer
   });
 }
 
+const testerInfoDescription = "**/open** – Waitlist für den aktuellen Kanal öffnen\n**/close** – Waitlist für den aktuellen Kanal schließen\n**/leave** – Eigene Waitlist verlassen\n**/testerjoin** – Nur der Tester-Waitlist beitreten\n**/testerleave** – Nur die Tester-Waitlist verlassen\n**/next** – Nächstes Ticket öffnen\n**/eval** – Testticket an Helper, Mod, Manager und Owner zur Auswertung übergeben\n**/add tier:<tier> kit:<kit>** – Passende Tier-Rolle zum aktuellen Testticket hinzufügen (Helper, Mod, Manager, Admin, Owner)\n**/skip** – Aktuelles Ticket überspringen\n**/result tier:<tier>** – Ergebnis des aktuellen Tickets speichern";
+
+async function respondWithEmbed(interaction: DiscordInteraction, title: string, description: string, ephemeral = false) {
+  await rest(`/interactions/${interaction.id}/${interaction.token}/callback`, {
+    method: "POST",
+    body: JSON.stringify({
+      type: 4,
+      data: { embeds: [{ title, description, color: 0x5865f2 }], flags: ephemeral ? 64 : 0 },
+    }),
+  });
+}
+
 async function registerCommands(applicationId: string) {
   const commands = [
     {
@@ -258,6 +270,11 @@ async function registerCommands(applicationId: string) {
       description: "Entfernt alle Website-Tiers eines Users",
       options: [{ name: "user", description: "Discord-User, dessen Tiers entfernt werden", type: 6, required: true }],
     },
+    {
+      name: "tester",
+      description: "Zeigt die Tester-Befehle an",
+      options: [{ name: "info", description: "Zeigt die Tester-Befehle als Embed an", type: 1 }],
+    },
   ];
   const guildId = process.env.DISCORD_GUILD_ID;
   const path = guildId
@@ -272,6 +289,10 @@ async function handleInteraction(interaction: DiscordInteraction) {
   const name = interaction.data?.name;
   const user = actor(interaction);
   try {
+    if (name === "tester" && subcommand(interaction) === "info") {
+      await respondWithEmbed(interaction, "NexusTiers Tester-Befehle", testerInfoDescription);
+      return;
+    }
     if (name === "create") {
       if (subcommand(interaction) !== "role") {
         await respond(interaction, "Nutze den Befehl als \`/create role\`.", true);
